@@ -1,0 +1,12 @@
+<panel>
+  <title>Delphix Engine Status</title>
+  <chart>
+    <search>
+      <query>index="delphix_dxtoolkit"|stats count by status</query>
+      <earliest>-24h@h</earliest>
+      <latest>now</latest>
+    </search>
+    <option name="charting.chart">pie</option>
+    <option name="charting.drilldown">none</option>
+  </chart>
+</panel>
