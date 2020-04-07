@@ -1,0 +1,69 @@
+<form theme="dark">
+  <label>Delphix Alert Details</label>
+  <fieldset submitButton="false">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host where `delphix_metrics_index`|  mvexpand host | sort "host" | table "host"</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="eventSeverity" searchWhenChanged="true">
+      <label>Severity</label>
+      <choice value="*">All</choice>
+      <initialValue>*</initialValue>
+      <fieldForLabel>eventSeverity</fieldForLabel>
+      <fieldForValue>eventSeverity</fieldForValue>
+      <search>
+        <query>index="delphix_events" | search host="*" source="delphix.events.alert" | spath eventSeverity| search eventSeverity=WARNING OR CRITICAL  |table eventSeverity | dedup eventSeverity</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+      <default>*</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Alert Count</title>
+      <chart>
+        <title>Alerts</title>
+        <search>
+          <query>`delphix_events_index` | search host="$host$" source="delphix.events.alert" | spath eventSeverity| search eventSeverity=WARNING OR CRITICAL | stats count(eval(eventSeverity="CRITICAL")) AS CRITICAL count(eval(eventSeverity="WARNING")) AS WARNING BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Alert Detail</title>
+      <table>
+        <title>Alert Detail</title>
+        <search>
+          <query>`delphix_events_index` | search host="$host$" eventSeverity="$eventSeverity$" source="delphix.events.alert" | spath eventSeverity| search eventSeverity=WARNING OR CRITICAL  |table eventSeverity host targetName details  | sort timestamp</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

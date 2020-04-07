@@ -1,0 +1,39 @@
+<form theme="dark">
+  <label>Delphix Fault Details</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <choice value="*">All</choice>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host WHERE `delphix_metrics_index`|  mvexpand host | sort "host" | table "host"</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Fault Details</title>
+      <table>
+        <search>
+          <query>`delphix_events_index` |search host="$host$" source="delphix.events.fault.posted" | table host dateDiagnosed details reference</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

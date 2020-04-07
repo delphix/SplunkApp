@@ -1,0 +1,125 @@
+<form theme="dark">
+  <label>Delphix Daily Details</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Top Storage Consumption</title>
+      <table>
+        <title>Storage by % Used</title>
+        <search>
+          <query>| mstats avg(_value) as current where `delphix_metrics_index` AND host="*"  metric_name="system.capacity.consumer.size" by host, data.totalSpace, data.consumerName
+| eval usageGB = round(current / 1024 / 1024 /1024 , 2)
+| eval capacityGB = round('data.totalSpace' / 1024 / 1024 /1024 , 2)
+| eval dataset = 'data.consumerName'
+| stats first(usageGB) as TotalU, first(capacityGB) as TotalCap by dataset, host
+| stats sum(TotalU) as Gtotal, first(TotalCap) as GCap by host
+| eval pct_usage = round(Gtotal / GCap * 100, 2)
+| eval compare_usage = Gtotal." / ".GCap
+| stats first(pct_usage) as "Used(%)" first(compare_usage) as "Compare(used/total)" by host | sort Used(%) desc</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">cell</option>
+        <format type="color" field="Used(%)">
+          <colorPalette type="list">[#53A051,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">40,70</scale>
+        </format>
+        <format type="number" field="Used(%)">
+          <option name="unit">%</option>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/metrix?form.host=$row.host$</link>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <title>Top Disk Latency</title>
+      <table>
+        <title>Disk Latency - Read and Write</title>
+        <search>
+          <query>|mstats avg(_value) where host="*" AND `delphix_metrics_index` metric_name="system.disk.*" span=1m by data.op, data.avgLatency, host | eval op= 'data.op'|eval latency = round('data.avgLatency' / 1000000, 2)  | eval condition = case(latency &gt; 10, "high", latency &lt;= 10, "low") | stats perc85(latency) AS Latency by host, op, condition | sort Latency desc</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="condition">
+          <colorPalette type="map">{"high":#DC4E41}</colorPalette>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/perf?form.host=$row.host$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <title>Top CPU</title>
+      <table>
+        <title>85th Percentile for Time Period</title>
+        <search>
+          <query>|mstats perc85(_value) as cpu where `delphix_metrics_index` AND host="*" metric_name="system.cpu.util.pct" by host|eval pct_util = round(cpu,2)| eval condition = case(pct_util &gt; 70, "high",pct_util &gt;15 AND  pct_util &lt;=70, "Moderate",pct_util &lt;=15, "low") | stats first(pct_util) AS "%Util" first(condition) AS "Activity Level" by host | sort "%Util" desc</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Activity Level">
+          <colorPalette type="map">{"high":#DC4E41}</colorPalette>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/perf?form.host=$row.host$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Hosts Not Reporting</title>
+      <table>
+        <title>Last Reported to Splunk</title>
+        <search>
+          <query>|metadata type=hosts where `delphix_events_index`| eval last_report = lastTime | eval days_since = floor((now() - last_report) / 86400) | eval days_since_pretty = case(days_since == 0, "Today", days_since == 1, "1 Day", days_since &gt; 1, days_since. " Days")| eval Lapse = days_since_pretty | eval Host = host| sort days_since desc | stats first(days_since) AS "Days Since Last Report" by host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Days Since Last Report">
+          <option name="precision">0</option>
+          <option name="unit">Days</option>
+        </format>
+        <format type="color" field="Days Since Last Report">
+          <colorPalette type="list">[#53A051,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">1,2</scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

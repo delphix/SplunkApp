@@ -1,7 +1,0 @@
-<nav search_view="search">
-  <view name="search" />
-    <view name="events" default="true"/> 
-    <view name="perf" />
-    <view name="delphix_dxtoolkit" />
-    <view name="dashboards" />
-</nav>

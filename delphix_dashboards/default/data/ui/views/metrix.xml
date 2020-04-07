@@ -1,0 +1,83 @@
+<form theme="dark">
+  <label>Delphix Dataset Details</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <choice value="*">All</choice>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host WHERE `delphix_metrics_index` |  mvexpand host | sort "host" | table "host"</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Capacity Metrics (VDBs / Snapshots)</title>
+      <chart>
+        <title>Usage (MB)</title>
+        <search>
+          <query>| mstats avg(_value) as current where host="$host$" AND `delphix_metrics_index` metric_name="system.capacity.consumer.size" span=30m by data.totalSpace, data.consumerName | eval usage = round((current) / 1024 /1024, 2) | eval totalGB=round('data.totalSpace' / 1024 / 1024 / 1024, 3) | eval name = 'data.consumerName'| chart avg(usage) as "Usage (MB)" avg(totalGB) as "Total (GB)" by name</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <refresh>30m</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Details</title>
+        <search>
+          <query>| mstats avg(_value) as current where host="$host$" AND `delphix_metrics_index` metric_name="system.capacity.consumer.size" span=30m by data.totalSpace, data.consumerName, data.objectType 
+| eval usage = round((current) / 1024 /1024, 0) 
+| eval totalGB=round('data.totalSpace' / 1024 / 1024 / 1024, 0) 
+| eval name = 'data.consumerName' 
+| eval type = 'data.objectType'
+| stats avg(usage) as "Usage (MB)" avg(totalGB) as "Total (GB)" by name, type</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="totalsRow">false</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Storage</title>
+      <table>
+        <search>
+          <query>| mstats avg(_value) as current where host="$host$" AND `delphix_metrics_index` metric_name="system.capacity.consumer.size" by host, data.totalSpace, data.consumerName 
+| eval usageGB = round(current / 1024 / 1024 /1024 , 2) 
+| eval capacityGB = round('data.totalSpace' / 1024 / 1024 /1024 , 2) 
+| eval dataset = 'data.consumerName' 
+| stats first(usageGB) as TotalU, first(capacityGB) as TotalCap by dataset, host
+| stats sum(TotalU) as Gtotal, first(TotalCap) as GCap by host
+| eval pct_usage = round(Gtotal / GCap * 100, 2)
+| eval compare_usage = Gtotal." / ".GCap 
+| stats first(pct_usage) as "Used (%)" first(compare_usage) as "Usage GB(used/total)" by host</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <format type="color" field="Used (%)">
+          <colorPalette type="list">[#53A051,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">60,70</scale>
+        </format>
+        <format type="number" field="Used (%)">
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

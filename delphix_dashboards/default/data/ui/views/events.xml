@@ -1,0 +1,168 @@
+<form theme="dark">
+  <label>Delphix  Dashboard</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host where `delphix_metrics_index` |  mvexpand host | sort "host" | table "host"</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Jobs</title>
+      <chart>
+        <title>Jobs by Status</title>
+        <search>
+          <query>`delphix_events_index`  |search host="$host$"  source="delphix.events.job.event" | spath jobState | search jobState=* | stats count(eval(jobState="COMPLETED")) AS COMPLETED  count(eval(jobState="FAILED")) AS FAILED count(eval(jobState="CANCELED")) AS CANCELED  by host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_self">/app/delphix_dashboards/details?form.host=$click.value$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Alerts</title>
+      <chart>
+        <title>Alerts by Severity</title>
+        <search>
+          <query>`delphix_events_index`  | search host="$host$" source="delphix.events.alert" | spath eventSeverity| search eventSeverity=WARNING OR CRITICAL | stats count(eval(eventSeverity="CRITICAL")) AS CRITICAL count(eval(eventSeverity="WARNING")) AS WARNING BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_self">/app/delphix_dashboards/alerts?form.host=$click.value$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Faults</title>
+      <chart>
+        <title>Fault Count</title>
+        <search>
+          <query>`delphix_events_index`   |search host="$host$" | stats  count(eval(source="delphix.events.fault.posted")) AS FAULTS  BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_self">/app/delphix_dashboards/faults?form.host=$click.value$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Logins</title>
+      <chart>
+        <title>User Logins by Success</title>
+        <search>
+          <query>`delphix_events_index`  |search host="$host$" source="delphix.events.action.*" title="USER_*" host="*"| spath title |spath workSourceName | stats count(eval(title="USER_LOGIN")) AS Successful count(eval(title="USER_FAILED_LOGIN")) AS Failed BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <drilldown>
+          <link target="_self">/app/delphix_dashboards/security?form.host=$click.value$&amp;form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Events</title>
+      <chart>
+        <title>Delphix  Events by Type</title>
+        <search>
+          <query>`delphix_events_index`   | search host="$host$" |stats 
+count(eval(source="delphix.events.action.completed" OR 
+source="delphix.events.action.started" OR 
+source="delphix.events.action.waiting" )) AS ACTIONS 
+count(eval(source="delphix.events.fault.posted")) AS FAULTS 
+count(eval(source="delphix.events.alert" )) AS ALERTS count(eval(source="delphix.events.job.event" )) AS JOBS BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Job Times</title>
+      <chart>
+        <title>Jobs  by Duration</title>
+        <search>
+          <query>`delphix_events_index`  | search host ="$host$" source="delphix.events.action.*" | transaction reference | table reference title duration | sort duration desc</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_self">/app/delphix_dashboards/jobs?form.time1.earliest=$time1.earliest$&amp;form.time1.latest=$time1.latest$</link>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+</form>

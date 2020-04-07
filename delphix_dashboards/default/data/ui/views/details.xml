@@ -1,0 +1,53 @@
+<form theme="dark">
+  <label>Delphix Job Details</label>
+  <description>Job Details</description>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host WHERE `delphix_metrics_index`|  mvexpand host | sort "host" | table "host"</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+      <choice value="*">All</choice>
+      <initialValue>*</initialValue>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="jobState" searchWhenChanged="true">
+      <label>Status</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>jobState</fieldForLabel>
+      <fieldForValue>jobState</fieldForValue>
+      <search>
+        <query>`delphix_events_index`  source="delphix.events.job.event" | spath jobState | table jobState | dedup jobState</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Job Details</title>
+      <table>
+        <title>Jobs</title>
+        <search>
+          <query>`delphix_events_index` |search host="$host$" AND jobState="$jobState$"  source="delphix.events.job.event"| spath jobState | search jobState="$jobState$" | table host timestamp messageDetails parentAction</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

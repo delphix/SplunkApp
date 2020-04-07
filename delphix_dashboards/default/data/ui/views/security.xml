@@ -1,0 +1,104 @@
+<form theme="dark">
+  <label>Delphix Security</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time1" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>| mcatalog values(host) as host WHERE `delphix_metrics_index` |  mvexpand host | sort "host" | table "host"</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="user" searchWhenChanged="true">
+      <label>User</label>
+      <fieldForLabel>user</fieldForLabel>
+      <fieldForValue>user</fieldForValue>
+      <search>
+        <query>`delphix_events_index`  source="delphix.events.action.*"  title="USER_*" host="*"| dedup workSourcePrincipal | table workSourcePrincipal</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <choice value="*">ALL</choice>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Login Success and Failure</title>
+      <chart>
+        <title>Login by Host</title>
+        <search>
+          <query>`delphix_events_index` |search host="$host$" source="delphix.events.action.*" title="USER_*" host="*"| spath title |spath workSourceName | stats count(eval(title="USER_LOGIN")) AS Successful count(eval(title="USER_FAILED_LOGIN")) AS Failed BY host</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>User Job Count</title>
+      <chart>
+        <title>Jobs by User</title>
+        <search>
+          <query>`delphix_events_index`  source="delphix.events.action.started" host="$host$"|stats count by workSourceName</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>User Login Count</title>
+      <chart>
+        <title>Login by User</title>
+        <search>
+          <query>`delphix_events_index`  source="delphix.events.action.*"  title="USER_*" host="$host$"| spath title | stats count(eval(title="USER_LOGIN")) AS Successful count(eval(title="USER_FAILED_LOGIN")) AS Failed BY workSourceName</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Logins</title>
+      <table>
+        <title>Recent Logins</title>
+        <search>
+          <query>`delphix_events_index`  source="delphix.events.action.failed" host="$host$"| spath title | search title=USER_FAILED_LOGIN | spath workSourceName | spath startTime | table startTime host workSourceName state  originIp</query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

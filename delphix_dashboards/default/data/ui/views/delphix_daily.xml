@@ -1,0 +1,124 @@
+<dashboard theme="dark">
+  <label>Delphix Daily</label>
+  <row>
+    <panel>
+      <table>
+        <search>
+          <query>|mstats perc85(_value) as cpu where `delphix_metrics_index` AND host="*" metric_name="system.cpu.util.pct" by host|eval pct_util = round(cpu,2)| eval condition = case(pct_util &gt; 70, "high",pct_util &gt;15 AND  pct_util &lt;=70, "Moderate",pct_util &lt;=15, "low") | dedup host | stats count(eval(condition = "high")) AS "High CPU"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/delphix_daily_details</link>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <search>
+          <query>|mstats avg(_value) where host="*" AND `delphix_metrics_index` metric_name="system.disk.*" span=1m by data.op, data.avgLatency, host | eval op= 'data.op'|eval latency = round('data.avgLatency' / 1000000, 2)  | eval condition = case(latency &gt; 10, "high", latency &lt;= 10, "low") | dedup host,op, condition |stats count(eval(condition = "high")) AS "High Latency" count(eval(condition = "low")) AS "Low Latency"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/delphix_daily_details</link>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <search>
+          <query>| mstats avg(_value) as current where `delphix_metrics_index` AND host="*"  metric_name="system.capacity.consumer.size" by host, data.totalSpace, data.consumerName
+| eval usageGB = round(current / 1024 / 1024 /1024 , 2)
+| eval capacityGB = round('data.totalSpace' / 1024 / 1024 /1024 , 2)
+| eval dataset = 'data.consumerName'
+| stats first(usageGB) as TotalU, first(capacityGB) as TotalCap by dataset, host
+| stats sum(TotalU) as Gtotal, first(TotalCap) as GCap by host
+| eval pct_usage = round(Gtotal / GCap * 100, 2)
+| eval compare_usage = Gtotal." / ".GCap
+| eval condition = case(pct_usage &gt; 69, "high",pct_usage &lt;= 69 and pct_usage &gt; 40, "moderate", pct_usage &lt;= 40, "low") 
+| stats count(eval(condition = "high")) AS "High Storage Consumption" count(eval(condition = "moderate")) AS "Moderate Storage Consumption" count(eval(condition = "low")) AS "Low Storage Consumption"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">/app/delphix_dashboards/delphix_daily_details</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>CPU Utilization</title>
+      <chart>
+        <title>CPU over time</title>
+        <search>
+          <query>|mstats avg(_value) as cpu where `delphix_metrics_index` AND host="*" metric_name="system.cpu.util.pct" span=1m By host |timechart avg(cpu) span=1h by host</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trellis.splitBy">_aggregation</option>
+      </chart>
+    </panel>
+  </row>
+</dashboard>
