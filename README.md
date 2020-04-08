@@ -5,7 +5,7 @@ This Splunk app provides visibility into various activities of your Delphix depl
 
 ## Prerequisites
 
-This needs Splunk configuration to be enabled on your Delphix Dynamic Data platform(s), see [Delphix Splunk Integration](https://docs.delphix.com/docs/system-administration/splunk-integration) for details.
+This needs Splunk configuration to be enabled on your Delphix Dynamic Data platform(s), see [Delphix Splunk Integration](https://docs.delphix.com/docs/configuration/monitoring-and-log-management/splunk-integration) for details.
 
 
 ## Contributing
