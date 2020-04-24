@@ -5,13 +5,13 @@
     "id": {
       "group": null, 
       "name": "delphix_dashboards", 
-      "version": "1.0.0"
+      "version": "1.0.1"
     }, 
     "author": [
       {
-        "name": "jwilcox3", 
-        "email": null, 
-        "company": null
+        "name": "Jonathan Wilcox", 
+        "email": "jonathan.wilcox@delphix.com", 
+        "company": "Delphix"
       }
     ], 
     "releaseDate": null, 
